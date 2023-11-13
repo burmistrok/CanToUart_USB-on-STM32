@@ -1,0 +1,4 @@
+../Source/Services/Kernel/Sys.c:21:6:vSys_Init	1
+../Source/Services/Kernel/Sys.c:34:6:vSys_DeInit	1
+../Source/Services/Kernel/Sys.c:46:10:u32Sys_GetRunTime	1
+../Source/Services/Kernel/Sys.c:57:15:vSysRunModeTick	1

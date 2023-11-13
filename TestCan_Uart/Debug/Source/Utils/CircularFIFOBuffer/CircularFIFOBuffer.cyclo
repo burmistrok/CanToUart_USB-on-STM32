@@ -1,0 +1,5 @@
+../Source/Utils/CircularFIFOBuffer/CircularFIFOBuffer.c:12:6:bCircularFIFOBuffer_isFull	2
+../Source/Utils/CircularFIFOBuffer/CircularFIFOBuffer.c:23:6:bCircularFIFOBuffer_isEmpty	2
+../Source/Utils/CircularFIFOBuffer/CircularFIFOBuffer.c:37:6:vCircularFIFOBuffer_Init	1
+../Source/Utils/CircularFIFOBuffer/CircularFIFOBuffer.c:49:6:bCircularFIFOBuffer_getElement	3
+../Source/Utils/CircularFIFOBuffer/CircularFIFOBuffer.c:73:6:bCircularFIFOBuffer_addElement	3

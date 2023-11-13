@@ -1,0 +1,4 @@
+../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_bus.h:761:22:LL_APB2_GRP1_EnableClock	1
+../Source/Peripherals/HAL_CAN/Hal_Can.c:19:6:vCan_Init	2
+../Source/Peripherals/HAL_CAN/Hal_Can.c:68:6:Hal_Can_MainFunction	3
+../Source/Peripherals/HAL_CAN/Hal_Can.c:93:6:Hal_Can_Transmit	6

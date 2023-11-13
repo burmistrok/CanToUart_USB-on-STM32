@@ -1,0 +1,6 @@
+../Source/Utils/Utils.c:25:10:u16Calculate_CRC16Modbus	4
+../Source/Utils/Utils.c:46:6:vtoUpperMv	4
+../Source/Utils/Utils.c:59:6:vMemsetMv	2
+../Source/Utils/Utils.c:67:6:bStrstrMv	4
+../Source/Utils/Utils.c:89:10:u16_strlenMv	2
+../Source/Utils/Utils.c:99:10:u16_strcatMv	2

@@ -1,0 +1,3 @@
+../Source/Services/SchM/SchM.c:26:6:vSchM_Init	1
+../Source/Services/SchM/SchM.c:39:6:vSchM_DeInit	1
+../Source/Services/SchM/SchM.c:51:6:vSchM_MainFunction	8
