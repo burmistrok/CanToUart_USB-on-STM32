@@ -1,4 +1,12 @@
 ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_bus.h:761:22:LL_APB2_GRP1_EnableClock	1
-../Source/Peripherals/HAL_CAN/Hal_Can.c:19:6:vCan_Init	2
-../Source/Peripherals/HAL_CAN/Hal_Can.c:68:6:Hal_Can_MainFunction	3
-../Source/Peripherals/HAL_CAN/Hal_Can.c:93:6:Hal_Can_Transmit	6
+../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_gpio.h:341:22:LL_GPIO_SetPinMode	1
+../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_gpio.h:419:22:LL_GPIO_SetPinSpeed	1
+../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_gpio.h:1207:22:LL_GPIO_AF_RemapPartial2_CAN1	1
+../Source/Peripherals/HAL_CAN/Hal_Can.c:28:6:vCan_Init	2
+../Source/Peripherals/HAL_CAN/Hal_Can.c:49:6:Hal_Can_MainFunction	3
+../Source/Peripherals/HAL_CAN/Hal_Can.c:75:6:Hal_Can_Transmit	6
+../Source/Peripherals/HAL_CAN/Hal_Can.c:125:20:Can_EnableClock	1
+../Source/Peripherals/HAL_CAN/Hal_Can.c:130:20:Can_ConfigPins	1
+../Source/Peripherals/HAL_CAN/Hal_Can.c:139:20:Can_GeneralConfig	1
+../Source/Peripherals/HAL_CAN/Hal_Can.c:145:20:Can_ConfigBaudRate	1
+../Source/Peripherals/HAL_CAN/Hal_Can.c:161:20:Can_ConfigFilters	1

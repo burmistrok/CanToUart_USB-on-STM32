@@ -67,8 +67,8 @@ all: main-build
 main-build: TestCan_Uart.elf secondary-outputs
 
 # Tool invocations
-TestCan_Uart.elf TestCan_Uart.map: $(OBJS) $(USER_OBJS) C:\Users\MO\STM32CubeIDE\workspace_1.13.2\TestCan_Uart\STM32F103C8TX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "TestCan_Uart.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m3 -T"C:\Users\MO\STM32CubeIDE\workspace_1.13.2\TestCan_Uart\STM32F103C8TX_FLASH.ld" --specs=nosys.specs -Wl,-Map="TestCan_Uart.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+TestCan_Uart.elf TestCan_Uart.map: $(OBJS) $(USER_OBJS) C:\Users\oleg.burmistr\Documents\Repositories\CanToUart_USB-on-STM32\TestCan_Uart\STM32F103C8TX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "TestCan_Uart.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m3 -T"C:\Users\oleg.burmistr\Documents\Repositories\CanToUart_USB-on-STM32\TestCan_Uart\STM32F103C8TX_FLASH.ld" --specs=nosys.specs -Wl,-Map="TestCan_Uart.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
