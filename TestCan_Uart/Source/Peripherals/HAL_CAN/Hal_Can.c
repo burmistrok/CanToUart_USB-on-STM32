@@ -161,8 +161,8 @@ inline static void Can_ConfigBaudRate(void)
 inline static void Can_ConfigFilters(void)
 {
 	/*Receive all the messagess*/
-	CAN1->sFilterRegister[0].FR1 = 0xFFFFFFFF;
-	CAN1->sFilterRegister[0].FR2 = 0xFFFFFFFF;
+	CAN1->sFilterRegister[0].FR1 = 0x00U;
+	CAN1->sFilterRegister[0].FR2 = 0x00U;
 
 	/* Enable first filter */
 	CAN1->FA1R |= CAN_FA1R_FACT0;
