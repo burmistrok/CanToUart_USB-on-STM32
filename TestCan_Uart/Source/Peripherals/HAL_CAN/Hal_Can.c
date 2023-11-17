@@ -8,14 +8,18 @@
 
 #include "Std_types.h"
 #include "Hal_Can.h"
+#include "HAL_USART.h"
 
 #define ONE_BYTES_DATA_SIZE		(8u)
 #define FOUR_BYTES_DATA_SIZE	(32u)
 #define HALF_DATA				(MAX_STD_DLC_LENGHT/2u)
 
+#define TASK_PERIOD	(32u)
+
+#define MESSAGE_PUSH_TIME	(1000u/TASK_PERIOD)
 
 
-static uint8_t u8_CanStatus;
+static uint16_t u16_CanStatus;
 static volatile uint8_t RxIndx;
 
 
@@ -23,11 +27,12 @@ inline static void Can_EnableClock(void);
 inline static void Can_ConfigPins(void);
 inline static void Can_GeneralConfig(void);
 inline static void Can_ConfigBaudRate(void);
+inline static void Can_EnableIT(void);
 inline static void Can_ConfigFilters(void);
 
 void vCan_Init(void)
 {
-	u8_CanStatus = 0u;
+	u16_CanStatus = MESSAGE_PUSH_TIME;
 
 	Can_EnableClock();
 	Can_ConfigPins();
@@ -38,6 +43,7 @@ void vCan_Init(void)
 
 	Can_GeneralConfig();
 	Can_ConfigBaudRate();
+	Can_EnableIT();
 	Can_ConfigFilters();
 
 
@@ -46,10 +52,10 @@ void vCan_Init(void)
 
 }
 
-void Hal_Can_MainFunction(void)
+void vCan_MainFunction(void)
 {
 	TS_CanFrame ls_CanData = {0u};
-	if(0u == u8_CanStatus)
+	if(MESSAGE_PUSH_TIME < u16_CanStatus)
 	{
 
 		ls_CanData.u32CanFrameId = 0x50;
@@ -61,7 +67,11 @@ void Hal_Can_MainFunction(void)
 		ls_CanData.ua8_Data[7u] = 0xAA;
 
 		Hal_Can_Transmit(&ls_CanData);
-		u8_CanStatus = 1u;
+		u16_CanStatus = 0u;
+	}
+	else
+	{
+		u16_CanStatus++;
 	}
 
 	if(0u != ( (CAN1->RF0R & CAN_RF0R_FMP0_Msk) | (CAN1->RF1R & CAN_RF0R_FMP0_Msk) ) )
@@ -146,11 +156,12 @@ inline static void Can_ConfigBaudRate(void)
 {
 	/*Config baud rate to 500k*/
 	CAN1->BTR &= ~CAN_BTR_BRP;
-	CAN1->BTR |= 4U << CAN_BTR_BRP_Pos; /* 36MHz/4 =9MHz */
+	CAN1->BTR |= 3U << CAN_BTR_BRP_Pos; /* 36MHz/4 =9MHz */
+	CAN1->BTR &= ~CAN_BTR_SJW;
 	CAN1->BTR &= ~(CAN_BTR_TS1_Msk);
-	CAN1->BTR |= CAN_BTR_TS1_0 | CAN_BTR_TS1_1 | CAN_BTR_TS1_2 | CAN_BTR_TS1_3;		/* Seg1 = 15 */
+	CAN1->BTR |= CAN_BTR_TS1_1 | CAN_BTR_TS1_2 | CAN_BTR_TS1_3;		/* Seg1 = 15 */
 	CAN1->BTR &= ~(CAN_BTR_TS2_Msk);
-	CAN1->BTR |= CAN_BTR_TS2_1;			/* Seg2 = 2 */
+	CAN1->BTR |= CAN_BTR_TS2_0;			/* Seg2 = 2 */
 
 
 #ifdef CAN_DBG_USED
@@ -175,3 +186,89 @@ inline static void Can_ConfigFilters(void)
 
 	CAN1->FMR &= ~CAN_FMR_FINIT;	/* Activate Filters */
 }
+
+
+inline static void Can_EnableIT(void)
+{
+#ifdef USE_TX_CONFIRMATIN
+	CAN1->IER |= CAN_IER_TMEIE;
+	NVIC_SetPriority(USB_HP_CAN1_TX_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),0, 0));
+	NVIC_EnableIRQ(USB_HP_CAN1_TX_IRQn);
+#endif
+
+
+	CAN1->IER |= CAN_IER_FMPIE0;
+	NVIC_SetPriority(USB_LP_CAN1_RX0_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),0, 0));
+	NVIC_EnableIRQ(USB_LP_CAN1_RX0_IRQn);
+
+	CAN1->IER |= CAN_IER_FMPIE1;
+	NVIC_SetPriority(CAN1_RX1_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),0, 0));
+	NVIC_EnableIRQ(CAN1_RX1_IRQn);
+
+}
+
+#ifdef USE_TX_CONFIRMATIN
+void USB_HP_CAN1_TX_IRQHandler(void)
+{
+	CAN1->TSR |= CAN_TSR_RQCP0;
+
+}
+#endif
+
+/**
+  * @brief This function handles USB low priority or CAN RX0 interrupts.
+  */
+void USB_LP_CAN1_RX0_IRQHandler(void)
+{
+	uint8_t lua8_Buffer[13];
+	uint16_t u16_len;
+	TS_CanFrame ls_Local_Frame;
+	ls_Local_Frame.u32CanFrameId = (uint32_t)((uint32_t)(CAN1->sFIFOMailBox[0].RIR & CAN_RI0R_STID_Msk) >> CAN_RI0R_STID_Pos);
+	ls_Local_Frame.RTR = (uint32_t)((uint32_t)(CAN1->sFIFOMailBox[0].RIR & CAN_RI0R_RTR_Msk) >> CAN_RI0R_RTR_Pos);
+	ls_Local_Frame.IDE = (uint32_t)((uint32_t)(CAN1->sFIFOMailBox[0].RIR & CAN_RI0R_IDE_Msk) >> CAN_RI0R_IDE_Pos);
+	ls_Local_Frame.u8_DLC = (uint32_t)((uint32_t)(CAN1->sFIFOMailBox[0].RDTR & CAN_RDT0R_DLC_Msk) >> CAN_RDT0R_DLC_Pos);
+
+	ls_Local_Frame.ua8_Data[0u] = (uint32_t)((uint32_t)(CAN1->sFIFOMailBox[0].RDLR & CAN_RDL0R_DATA0_Msk) >> CAN_RDL0R_DATA0_Pos);
+	ls_Local_Frame.ua8_Data[1u] = (uint32_t)((uint32_t)(CAN1->sFIFOMailBox[0].RDLR & CAN_RDL0R_DATA1_Msk) >> CAN_RDL0R_DATA1_Pos);
+	ls_Local_Frame.ua8_Data[2u] = (uint32_t)((uint32_t)(CAN1->sFIFOMailBox[0].RDLR & CAN_RDL0R_DATA2_Msk) >> CAN_RDL0R_DATA2_Pos);
+	ls_Local_Frame.ua8_Data[3u] = (uint32_t)((uint32_t)(CAN1->sFIFOMailBox[0].RDLR & CAN_RDL0R_DATA3_Msk) >> CAN_RDL0R_DATA3_Pos);
+
+	ls_Local_Frame.ua8_Data[4u] = (uint32_t)((uint32_t)(CAN1->sFIFOMailBox[0].RDHR & CAN_RDH0R_DATA4_Msk) >> CAN_RDH0R_DATA4_Pos);
+	ls_Local_Frame.ua8_Data[5u] = (uint32_t)((uint32_t)(CAN1->sFIFOMailBox[0].RDHR & CAN_RDH0R_DATA5_Msk) >> CAN_RDH0R_DATA5_Pos);
+	ls_Local_Frame.ua8_Data[6u] = (uint32_t)((uint32_t)(CAN1->sFIFOMailBox[0].RDHR & CAN_RDH0R_DATA6_Msk) >> CAN_RDH0R_DATA6_Pos);
+	ls_Local_Frame.ua8_Data[7u] = (uint32_t)((uint32_t)(CAN1->sFIFOMailBox[0].RDHR & CAN_RDH0R_DATA7_Msk) >> CAN_RDH0R_DATA7_Pos);
+
+
+	lua8_Buffer[0u] = (uint8_t)(ls_Local_Frame.u32CanFrameId & 0xFF);
+	lua8_Buffer[1u] = (uint8_t)((ls_Local_Frame.u32CanFrameId & 0xFF) >> 8u);
+	lua8_Buffer[2u] = (uint8_t)((ls_Local_Frame.u32CanFrameId & 0xFF) >> 16u);
+	lua8_Buffer[3u] = (uint8_t)((ls_Local_Frame.u32CanFrameId & 0xFF) >> 24u);
+
+	lua8_Buffer[4u] = ls_Local_Frame.u8_DLC;
+
+	lua8_Buffer[5u] = ls_Local_Frame.ua8_Data[0u];
+	lua8_Buffer[6u] = ls_Local_Frame.ua8_Data[1u];
+	lua8_Buffer[7u] = ls_Local_Frame.ua8_Data[2u];
+	lua8_Buffer[8u] = ls_Local_Frame.ua8_Data[3u];
+	lua8_Buffer[9u] = ls_Local_Frame.ua8_Data[4u];
+	lua8_Buffer[10u] = ls_Local_Frame.ua8_Data[5u];
+	lua8_Buffer[11u] = ls_Local_Frame.ua8_Data[6u];
+	lua8_Buffer[12u] = ls_Local_Frame.ua8_Data[7u];
+
+
+	HAL_USART_SendBuffer(USART1, &lua8_Buffer[0], 13u, &u16_len);
+
+
+	CAN1->RF0R |= CAN_RF0R_RFOM0;	/*Release FIFO mailbox*/
+
+}
+
+/**
+  * @brief This function handles CAN RX1 interrupt.
+  */
+void CAN1_RX1_IRQHandler(void)
+{
+
+
+}
+
