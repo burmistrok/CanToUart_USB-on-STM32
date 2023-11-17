@@ -9,10 +9,12 @@
 #include "HAL_USART.h"
 #include "CircularFIFOBuffer.h"
 
+#define ENTRY_CRITICAL_SECTION()	__disable_irq() /* disable all interrupts */
+#define EXIT_CRITICAL_SECTION()		__enable_irq()   /* enable all interrupts */
 
 static bool bUSARTInit = false;
-static TS_CircularFIFOBuffer TX_Buffer;
-static TS_CircularFIFOBuffer RX_Buffer;
+static volatile TS_CircularFIFOBuffer TX_Buffer;
+static volatile TS_CircularFIFOBuffer RX_Buffer;
 
 
 static void vLL_USART_Init(void);
@@ -31,8 +33,8 @@ void vUSART_Init(const void* configPtr())
 
 	bUSARTInit = true;
 	(void)configPtr();
-	vCircularFIFOBuffer_Init(&TX_Buffer);
-	vCircularFIFOBuffer_Init(&RX_Buffer);
+	vCircularFIFOBuffer_Init((TS_CircularFIFOBuffer*)&TX_Buffer);
+	vCircularFIFOBuffer_Init((TS_CircularFIFOBuffer*)&RX_Buffer);
 
 	vLL_USART_Init();
 }
@@ -91,7 +93,7 @@ void vUSART_ITCallBack(void)
 
 	if( (false != LL_USART_IsActiveFlag_RXNE(USART1)) && (false != LL_USART_IsEnabledIT_RXNE(USART1)) )
 	{
-		bCircularFIFOBuffer_addElement(&RX_Buffer, LL_USART_ReceiveData8(USART1));
+		bCircularFIFOBuffer_addElement((TS_CircularFIFOBuffer*)&RX_Buffer, LL_USART_ReceiveData8(USART1));
 	}
 
 	if( (false != LL_USART_IsActiveFlag_TXE(USART1)) && (false != LL_USART_IsEnabledIT_TXE(USART1)) )
@@ -105,9 +107,6 @@ void vUSART_ITCallBack(void)
 		LL_USART_DisableIT_TC(USART1);
 		LL_USART_ClearFlag_TC(USART1);
 	}
-
-
-
 }
 
 static void vLL_USART_Init(void)
@@ -120,15 +119,21 @@ static void vLL_USART_Init(void)
 TE_ERROR HAL_USART_GetChar(TS_USART* USARTx, uint8_t* Data)
 {
 	uint8_t u8_Data = 0;
-	if (false != bCircularFIFOBuffer_getElement(&RX_Buffer, (uint8_t*) &u8_Data) )
+	TE_ERROR le_RetVal = ERR_NOK;
+	bool lb_RetVal;
+	ENTRY_CRITICAL_SECTION();
+	lb_RetVal = bCircularFIFOBuffer_getElement((TS_CircularFIFOBuffer*)&RX_Buffer, (uint8_t*) &u8_Data);
+	if (false !=  lb_RetVal)
 	{
 		*Data = u8_Data;
-		return ERR_OK;
+		le_RetVal = ERR_OK;
 	}
 	else
 	{
-		return ERR_NOK;
+		le_RetVal =  ERR_NOK;
 	}
+	EXIT_CRITICAL_SECTION();
+	return le_RetVal;
 
 
 }
@@ -138,13 +143,17 @@ TE_ERROR HAL_USART_SendChar(TS_USART* USARTx, uint8_t Data)
 {
 
 	TE_ERROR eRetStatut = ERR_OK;
+	bool lb_RetVal;
 
-	if(false == bCircularFIFOBuffer_addElement(&TX_Buffer, Data) )
+	ENTRY_CRITICAL_SECTION();
+	lb_RetVal = bCircularFIFOBuffer_addElement((TS_CircularFIFOBuffer*)&TX_Buffer, Data);
+
+	if(false == lb_RetVal )
 	{
 
 		eRetStatut = ERR_BUFFER_FULL;
 	}
-
+	EXIT_CRITICAL_SECTION();
 	vHal_USART_PublishData();
 
 	return eRetStatut;
@@ -202,14 +211,17 @@ TE_ERROR HAL_USART_ReceiveBuffer(TS_USART* USARTx, uint8_t* Data, uint16_t Len, 
 static void vHal_USART_PublishData(void)
 {
 	uint8_t u8_Data = 0u;
+	bool lb_RetVal;
 
-	while( (false == bCircularFIFOBuffer_isEmpty(&TX_Buffer)) && (0u != LL_USART_IsActiveFlag_TXE(USART1)))
+	ENTRY_CRITICAL_SECTION();
+	while( (false == bCircularFIFOBuffer_isEmpty((TS_CircularFIFOBuffer*)&TX_Buffer)) && (0u != LL_USART_IsActiveFlag_TXE(USART1)))
 	{
-		bCircularFIFOBuffer_getElement(&TX_Buffer, (uint8_t*) &u8_Data);
+		bCircularFIFOBuffer_getElement((TS_CircularFIFOBuffer*)&TX_Buffer, (uint8_t*) &u8_Data);
 		LL_USART_TransmitData8(USART1, u8_Data);
 	}
-
-	if(false == bCircularFIFOBuffer_isEmpty(&TX_Buffer))
+	lb_RetVal = bCircularFIFOBuffer_isEmpty((TS_CircularFIFOBuffer*)&TX_Buffer);
+	EXIT_CRITICAL_SECTION();
+	if(false == lb_RetVal)
 	{
 		if(false == LL_USART_IsEnabledIT_TXE(USART1))
 		{

@@ -95,6 +95,6 @@ void vSchM_BaseRecurrenceTaskDiv32(void)
 	vUSART_MainFunction();
 #endif
 #ifdef USE_CAN
-	Hal_Can_MainFunction();
+	vCan_MainFunction();
 #endif
 }

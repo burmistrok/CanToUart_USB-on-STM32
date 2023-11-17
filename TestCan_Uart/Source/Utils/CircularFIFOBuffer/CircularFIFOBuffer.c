@@ -7,29 +7,33 @@
 
 #include "CircularFIFOBuffer.h"
 
+
 //***********************************************************************************************
 
 bool bCircularFIFOBuffer_isFull(TS_CircularFIFOBuffer* rg_Buffer){
+	bool RetVal;
 	if ((BUFFER_SIZE-1u) == rg_Buffer->u16_BufferSize)
 	{
-		return true ;
+		RetVal = true ;
 	}
 	else
 	{
-		return false;
+		RetVal = false;
 	}
+	return RetVal;
 }
 
 bool bCircularFIFOBuffer_isEmpty(TS_CircularFIFOBuffer* rg_Buffer){
-
+	bool RetVal;
 	if( 0u == rg_Buffer->u16_BufferSize )
 	{
-		return true ;
+		RetVal = true ;
 	}
 	else
 	{
-		return false;
+		RetVal = false;
 	}
+	return RetVal;
 }
 
 
@@ -48,46 +52,64 @@ void vCircularFIFOBuffer_Init(TS_CircularFIFOBuffer* rg_Buffer)
 // Get the first element from the FIFO queue
 bool bCircularFIFOBuffer_getElement(TS_CircularFIFOBuffer* rg_Buffer, uint8_t* theElement)
 {
+	bool RetVal = false;
 	if ( false == bCircularFIFOBuffer_isEmpty(rg_Buffer))
 	{
-		*theElement = rg_Buffer->Buffer[rg_Buffer->first];
-		if ( rg_Buffer->first != BUFFER_SIZE )
+		if(0u != rg_Buffer->u16_BufferSize)
 		{
-			rg_Buffer->first++;
+			*theElement = rg_Buffer->Buffer[rg_Buffer->first];
+			if ( rg_Buffer->first < BUFFER_SIZE )
+			{
+				rg_Buffer->first++;
+			}
+			else
+			{
+				rg_Buffer->first = 0;
+			}
+			rg_Buffer->u16_BufferSize--;
+			RetVal = true;
 		}
 		else
 		{
-			rg_Buffer->first = 0;
+			RetVal = false;
 		}
-		rg_Buffer->u16_BufferSize--;
 	}
 	else
 	{
-		return false;
+		RetVal = false;
 	}
 
-	return true;// Return !0 always if it is not empty
+	return RetVal;// Return !0 always if it is not empty
 }
 
 // Add an element to the FIFO queue
 bool bCircularFIFOBuffer_addElement(TS_CircularFIFOBuffer* rg_Buffer, uint8_t data)
 {
+	bool RetVal = false;
 	if(false == bCircularFIFOBuffer_isFull(rg_Buffer))
 	{
-		rg_Buffer->Buffer[rg_Buffer->next] = data;
-		if ( rg_Buffer->next != BUFFER_SIZE )
+		if(BUFFER_SIZE > rg_Buffer->u16_BufferSize)
 		{
-			rg_Buffer->next++;
+			rg_Buffer->Buffer[rg_Buffer->next] = data;
+			if ( rg_Buffer->next < BUFFER_SIZE )
+			{
+				rg_Buffer->next++;
+			}
+			else
+			{
+				rg_Buffer->next = 0;
+			}
+			rg_Buffer->u16_BufferSize++;
+			RetVal = true;
 		}
 		else
 		{
-			rg_Buffer->next = 0;
+			RetVal = false;
 		}
-		rg_Buffer->u16_BufferSize++;
-		return true;
 	}
 	else
 	{
-		return false;
+		RetVal = false;
 	}
+	return RetVal;
 }
